@@ -1,24 +1,14 @@
-import { Controller, Post, Get, Body, Param } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, Query } from '@nestjs/common';
 import { TradingService } from './trading.service';
+import { CandleService } from './candle.service';
 import { createClient } from 'redis';
-
-class OpenTradeDto {
-  account_id: string;
-  symbol: string;
-  side: string;
-  volume: number;
-  open_price: number;
-  sl_price?: number;
-  tp_price?: number;
-}
-
-class CloseTradeDto {
-  close_price: number;
-}
 
 @Controller('trading')
 export class TradingController {
-  constructor(private tradingService: TradingService) {}
+  constructor(
+    private tradingService: TradingService,
+    private candleService: CandleService,
+  ) {}
 
   @Get('price/:symbol')
   async getPrice(@Param('symbol') symbol: string) {
@@ -31,17 +21,26 @@ export class TradingController {
     return { bid: data.bid, ask: data.ask, spread: data.spread };
   }
 
+  @Get('candles/:symbol')
+  async getCandles(
+    @Param('symbol') symbol: string,
+    @Query('tf') tf: string,
+    @Query('limit') limit: string,
+  ) {
+    return this.candleService.getCandles(symbol, parseInt(tf || '1'), parseInt(limit || '100'));
+  }
+
   @Post('open')
-  openTrade(@Body() dto: OpenTradeDto) {
+  openTrade(@Body() body: any) {
     return this.tradingService.openTrade(
-      dto.account_id, dto.symbol, dto.side,
-      dto.volume, dto.open_price, dto.sl_price, dto.tp_price
+      body.account_id, body.symbol, body.side,
+      body.volume, body.open_price, body.sl_price, body.tp_price
     );
   }
 
   @Post('close/:id')
-  closeTrade(@Param('id') id: string, @Body() dto: CloseTradeDto) {
-    return this.tradingService.closeTrade(id, dto.close_price);
+  closeTrade(@Param('id') id: string, @Body() body: any) {
+    return this.tradingService.closeTrade(id, body.close_price);
   }
 
   @Get('open/:accountId')

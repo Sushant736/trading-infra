@@ -62,3 +62,4 @@ export default function SuperAdminDashboard() {
     </div>
   );
 }
+export const dynamic = 'force-dynamic';

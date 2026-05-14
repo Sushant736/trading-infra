@@ -5,39 +5,39 @@ export class Trade {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ name: 'account_id', type: 'uuid' })
   account_id: string;
 
-  @Column()
+  @Column({ name: 'symbol', type: 'varchar' })
   symbol: string;
 
-  @Column()
+  @Column({ name: 'side', type: 'varchar' })
   side: string;
 
-  @Column({ type: 'numeric' })
+  @Column({ name: 'volume', type: 'numeric' })
   volume: number;
 
-  @Column({ type: 'numeric' })
+  @Column({ name: 'open_price', type: 'numeric' })
   open_price: number;
 
-  @Column({ type: 'numeric', nullable: true })
+  @Column({ name: 'current_price', type: 'numeric', nullable: true })
   current_price: number;
 
-  @Column({ type: 'numeric', nullable: true })
+  @Column({ name: 'sl_price', type: 'numeric', nullable: true })
   sl_price: number;
 
-  @Column({ type: 'numeric', nullable: true })
+  @Column({ name: 'tp_price', type: 'numeric', nullable: true })
   tp_price: number;
 
-  @Column({ type: 'numeric', default: 0 })
+  @Column({ name: 'floating_pnl', type: 'numeric', default: 0 })
   floating_pnl: number;
 
-  @Column({ default: 'OPEN' })
+  @Column({ name: 'status', type: 'varchar', default: 'OPEN' })
   status: string;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'opened_at' })
   opened_at: Date;
 
-  @Column({ nullable: true })
+  @Column({ name: 'closed_at', nullable: true })
   closed_at: Date;
 }

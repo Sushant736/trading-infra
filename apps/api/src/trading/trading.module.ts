@@ -1,13 +1,11 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { TradingController } from './trading.controller';
 import { TradingService } from './trading.service';
-import { Trade } from './trade.entity';
+import { CandleService } from './candle.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Trade])],
   controllers: [TradingController],
-  providers: [TradingService],
-  exports: [TradingService],
+  providers: [TradingService, CandleService],
+  exports: [TradingService, CandleService],
 })
 export class TradingModule {}
