@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 const ACCOUNT_ID = '515aedd1-44a7-4942-82c7-3f0ac26787cf';
-const API = 'http://35.200.170.189:3000/api/v1';
+const API = (process.env.NEXT_PUBLIC_API_URL || 'http://35.200.170.189:3000') + '/api/v1';
 
 export default function TradeHistory() {
   const router = useRouter();

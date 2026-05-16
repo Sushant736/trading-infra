@@ -2,8 +2,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
-const API = 'http://35.200.170.189:3000/api/v1';
-const WS_URL = 'http://35.200.170.189:3000';
+const API = (process.env.NEXT_PUBLIC_API_URL || 'http://35.200.170.189:3000') + '/api/v1';
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'http://35.200.170.189:3000';
 
 export default function TraderDashboard() {
   const router = useRouter();

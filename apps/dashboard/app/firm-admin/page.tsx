@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-const API = 'http://35.200.170.189:3000/api/v1';
+const API = (process.env.NEXT_PUBLIC_API_URL || 'http://35.200.170.189:3000') + '/api/v1';
 
 const emptyPhase = {
   phase_number: '', phase_name: '', balance: '10000',
