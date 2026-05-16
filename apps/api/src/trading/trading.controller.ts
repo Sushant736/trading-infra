@@ -1,6 +1,7 @@
-import { Controller, Post, Get, Body, Param, Query } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Body, Param, Query, Headers } from '@nestjs/common';
 import { TradingService } from './trading.service';
 import { CandleService } from './candle.service';
+import { JwtService } from '@nestjs/jwt';
 import { createClient } from 'redis';
 
 @Controller('trading')
@@ -8,7 +9,22 @@ export class TradingController {
   constructor(
     private tradingService: TradingService,
     private candleService: CandleService,
+    private jwtService: JwtService,
   ) {}
+
+  private getTraderFromToken(auth: string) {
+    try {
+      const token = auth?.replace('Bearer ', '');
+      return this.jwtService.verify(token, { secret: process.env.JWT_SECRET || 'changeme_super_secret' });
+    } catch { return null; }
+  }
+
+  @Get('my-account')
+  async getMyAccount(@Headers('authorization') auth: string) {
+    const trader = this.getTraderFromToken(auth);
+    if (!trader) return { error: 'Unauthorized' };
+    return this.tradingService.getAccountByTraderId(trader.sub);
+  }
 
   @Get('price/:symbol')
   async getPrice(@Param('symbol') symbol: string) {
@@ -22,12 +38,13 @@ export class TradingController {
   }
 
   @Get('candles/:symbol')
-  async getCandles(
-    @Param('symbol') symbol: string,
-    @Query('tf') tf: string,
-    @Query('limit') limit: string,
-  ) {
+  async getCandles(@Param('symbol') symbol: string, @Query('tf') tf: string, @Query('limit') limit: string) {
     return this.candleService.getCandles(symbol, parseInt(tf || '1'), parseInt(limit || '100'));
+  }
+
+  @Get('risk/:accountId')
+  getRiskMetrics(@Param('accountId') accountId: string) {
+    return this.tradingService.getRiskMetrics(accountId);
   }
 
   @Post('open')
@@ -41,6 +58,11 @@ export class TradingController {
   @Post('close/:id')
   closeTrade(@Param('id') id: string, @Body() body: any) {
     return this.tradingService.closeTrade(id, body.close_price);
+  }
+
+  @Patch('update/:id')
+  updateTrade(@Param('id') id: string, @Body() body: any) {
+    return this.tradingService.updateSLTP(id, body.sl_price, body.tp_price);
   }
 
   @Get('open/:accountId')

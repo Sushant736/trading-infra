@@ -6,7 +6,7 @@ export class CandleService {
   async getCandles(symbol: string, timeframe: number, limit: number = 100) {
     const client = createClient({ url: 'redis://:changeme@localhost:6379' });
     await client.connect();
-    const msgs = await client.xRevRange(`feed:${symbol}`, '+', '-', { COUNT: 10000 });
+    const msgs = await client.xRevRange(`feed:${symbol}`, '+', '-', { COUNT: 1000000 });
     await client.disconnect();
 
     if (!msgs.length) return [];
