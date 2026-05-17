@@ -40,10 +40,11 @@ export class FirmsService {
 
   async getFirmTraders(firmId: string) {
     return this.db.query(`
-      SELECT t.*, 
+      SELECT t.*,
         ta.id as account_id, ta.broker_account_id, ta.current_balance, ta.equity,
         (SELECT COUNT(*) FROM positions p WHERE p.account_id = ta.id AND p.status='OPEN') as open_trades,
-        (SELECT COALESCE(SUM(floating_pnl),0) FROM positions p WHERE p.account_id = ta.id AND p.status='OPEN') as floating_pnl
+        (SELECT COALESCE(SUM(floating_pnl),0) FROM positions p WHERE p.account_id = ta.id AND p.status='OPEN') as floating_pnl,
+        (SELECT COUNT(*) FROM risk_events re WHERE re.account_id = ta.id AND re.created_at > NOW() - INTERVAL '24 hours') as breaches_today
       FROM traders t
       LEFT JOIN trading_accounts ta ON ta.trader_id = t.id
       WHERE t.firm_id=$1
@@ -57,12 +58,10 @@ export class FirmsService {
       INSERT INTO firms (name, slug, currency, timezone, max_traders, subscription_tier)
       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *
     `, [data.name, slug, data.currency || 'USD', data.timezone || 'UTC', data.max_traders || 10, data.subscription_tier || 'basic']);
-
     await this.db.query(`
       INSERT INTO firm_risk_rules (firm_id, max_daily_loss_pct, max_drawdown_pct, max_position_size, max_open_trades)
       VALUES ($1, $2, $3, $4, $5)
     `, [firm.id, data.max_daily_loss || 5, data.max_drawdown || 10, data.max_position_size || 1, data.max_open_trades || 5]);
-
     return firm;
   }
 
@@ -70,15 +69,11 @@ export class FirmsService {
     await this.db.query(`
       UPDATE firms SET name=$1, max_traders=$2, is_active=$3, updated_at=NOW() WHERE id=$4
     `, [data.name, data.max_traders, data.is_active, id]);
-
     if (data.risk_rules) {
       await this.db.query(`
-        UPDATE firm_risk_rules SET
-          max_daily_loss_pct=$1, max_drawdown_pct=$2,
-          max_position_size=$3, max_open_trades=$4
+        UPDATE firm_risk_rules SET max_daily_loss_pct=$1, max_drawdown_pct=$2, max_position_size=$3, max_open_trades=$4
         WHERE firm_id=$5
-      `, [data.risk_rules.max_daily_loss_pct, data.risk_rules.max_drawdown_pct,
-          data.risk_rules.max_position_size, data.risk_rules.max_open_trades, id]);
+      `, [data.risk_rules.max_daily_loss_pct, data.risk_rules.max_drawdown_pct, data.risk_rules.max_position_size, data.risk_rules.max_open_trades, id]);
     }
     return { success: true };
   }
@@ -99,17 +94,39 @@ export class FirmsService {
       INSERT INTO traders (firm_id, email, password_hash, full_name, trader_code)
       VALUES ($1, $2, $3, $4, $5) RETURNING *
     `, [firmId, data.email, hash, data.full_name, code]);
-
     const [account] = await this.db.query(`
       INSERT INTO trading_accounts (trader_id, firm_id, broker_account_id, broker_name, currency, initial_balance, current_balance, equity)
       VALUES ($1, $2, $3, $4, $5, $6, $6, $6) RETURNING *
     `, [trader.id, firmId, code, data.broker_name || 'PropScholar', data.currency || 'USD', data.balance || 10000]);
-
     return { trader, account };
   }
 
   async deactivateFirm(id: string) {
     await this.db.query(`UPDATE firms SET is_active=false WHERE id=$1`, [id]);
     return { success: true };
+  }
+
+  async getAllTraders() {
+    return this.db.query(`
+      SELECT t.*, f.name as firm_name,
+        ta.current_balance, ta.equity, ta.broker_account_id,
+        COALESCE((SELECT COUNT(*) FROM positions p WHERE p.account_id=ta.id AND p.status='OPEN'),0) as open_trades,
+        COALESCE((SELECT SUM(floating_pnl) FROM positions p WHERE p.account_id=ta.id AND p.status='OPEN'),0) as floating_pnl
+      FROM traders t
+      JOIN firms f ON f.id=t.firm_id
+      LEFT JOIN trading_accounts ta ON ta.trader_id=t.id
+      ORDER BY t.created_at DESC
+    `);
+  }
+
+  async getAllRiskEvents() {
+    return this.db.query(`
+      SELECT re.*, f.name as firm_name, t.full_name as trader_name, ta.broker_account_id
+      FROM risk_events re
+      JOIN firms f ON f.id=re.firm_id
+      JOIN trading_accounts ta ON ta.id=re.account_id
+      JOIN traders t ON t.id=ta.trader_id
+      ORDER BY re.created_at DESC LIMIT 100
+    `);
   }
 }

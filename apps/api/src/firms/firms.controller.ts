@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Headers } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param } from '@nestjs/common';
 import { FirmsService } from './firms.service';
 
 @Controller('firms')
@@ -10,6 +10,12 @@ export class FirmsController {
 
   @Get('stats')
   getStats() { return this.firmsService.getStats(); }
+
+  @Get('all-traders')
+  getAllTraders() { return this.firmsService.getAllTraders(); }
+
+  @Get('all-risk-events')
+  getAllRiskEvents() { return this.firmsService.getAllRiskEvents(); }
 
   @Get(':id')
   getFirm(@Param('id') id: string) { return this.firmsService.getFirm(id); }
