@@ -2,6 +2,7 @@ import { Controller, Get, Post, Patch, Delete, Body, Param, Headers } from '@nes
 import { TradersService } from './traders.service';
 import { JwtService } from '@nestjs/jwt';
 import { ChallengesService } from '../firms/challenges.service';
+import { ProgramsService } from '../firms/programs.service';
 
 @Controller('firm')
 export class TradersController {
@@ -9,6 +10,7 @@ export class TradersController {
     private tradersService: TradersService,
     private jwtService: JwtService,
     private challengesService: ChallengesService,
+    private programsService: ProgramsService,
   ) {}
 
   private getFirmFromToken(auth: string) {
@@ -30,13 +32,6 @@ export class TradersController {
     const admin = this.getFirmFromToken(auth);
     if (!admin) return { error: 'Unauthorized' };
     return this.tradersService.getFirmTraders(admin.firm_id);
-  }
-
-  @Get('traders/:id')
-  async getTrader(@Param('id') id: string, @Headers('authorization') auth: string) {
-    const admin = this.getFirmFromToken(auth);
-    if (!admin) return { error: 'Unauthorized' };
-    return this.tradersService.getTraderDetail(id, admin.firm_id);
   }
 
   @Post('traders')
@@ -81,34 +76,6 @@ export class TradersController {
     return this.tradersService.getWebhookInfo(admin.firm_id);
   }
 
-  @Get('phases')
-  async getPhases(@Headers('authorization') auth: string) {
-    const admin = this.getFirmFromToken(auth);
-    if (!admin) return { error: 'Unauthorized' };
-    return this.challengesService.getPhases(admin.firm_id);
-  }
-
-  @Post('phases')
-  async createPhase(@Body() body: any, @Headers('authorization') auth: string) {
-    const admin = this.getFirmFromToken(auth);
-    if (!admin) return { error: 'Unauthorized' };
-    return this.challengesService.createPhase(admin.firm_id, body);
-  }
-
-  @Patch('phases/:id')
-  async updatePhase(@Param('id') id: string, @Body() body: any, @Headers('authorization') auth: string) {
-    const admin = this.getFirmFromToken(auth);
-    if (!admin) return { error: 'Unauthorized' };
-    return this.challengesService.updatePhase(id, admin.firm_id, body);
-  }
-
-  @Delete('phases/:id')
-  async deletePhase(@Param('id') id: string, @Headers('authorization') auth: string) {
-    const admin = this.getFirmFromToken(auth);
-    if (!admin) return { error: 'Unauthorized' };
-    return this.challengesService.deletePhase(id, admin.firm_id);
-  }
-
   @Get('challenges')
   async getChallenges(@Headers('authorization') auth: string) {
     const admin = this.getFirmFromToken(auth);
@@ -123,10 +90,46 @@ export class TradersController {
     return this.challengesService.assignChallenge(admin.firm_id, body);
   }
 
-  @Get('challenges/check')
-  async checkProgress(@Headers('authorization') auth: string) {
+  // Programs
+  @Get('programs')
+  async getPrograms(@Headers('authorization') auth: string) {
     const admin = this.getFirmFromToken(auth);
     if (!admin) return { error: 'Unauthorized' };
-    return this.challengesService.checkChallengeProgress(admin.firm_id);
+    return this.programsService.getPrograms(admin.firm_id);
+  }
+
+  @Post('programs')
+  async createProgram(@Body() body: any, @Headers('authorization') auth: string) {
+    const admin = this.getFirmFromToken(auth);
+    if (!admin) return { error: 'Unauthorized' };
+    return this.programsService.createProgram(admin.firm_id, body);
+  }
+
+  @Patch('programs/:id')
+  async updateProgram(@Param('id') id: string, @Body() body: any, @Headers('authorization') auth: string) {
+    const admin = this.getFirmFromToken(auth);
+    if (!admin) return { error: 'Unauthorized' };
+    return this.programsService.updateProgram(id, admin.firm_id, body);
+  }
+
+  @Delete('programs/:id')
+  async deleteProgram(@Param('id') id: string, @Headers('authorization') auth: string) {
+    const admin = this.getFirmFromToken(auth);
+    if (!admin) return { error: 'Unauthorized' };
+    return this.programsService.deleteProgram(id, admin.firm_id);
+  }
+
+  @Post('programs/:id/phases')
+  async upsertPhase(@Param('id') id: string, @Body() body: any, @Headers('authorization') auth: string) {
+    const admin = this.getFirmFromToken(auth);
+    if (!admin) return { error: 'Unauthorized' };
+    return this.programsService.upsertPhase(id, admin.firm_id, body);
+  }
+
+  @Delete('programs/:id/phases/:order')
+  async deletePhase(@Param('id') id: string, @Param('order') order: string, @Headers('authorization') auth: string) {
+    const admin = this.getFirmFromToken(auth);
+    if (!admin) return { error: 'Unauthorized' };
+    return this.programsService.deletePhase(id, parseInt(order));
   }
 }
